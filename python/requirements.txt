@@ -1,0 +1,9 @@
+Flask
+flask-cors
+opencv-python
+pyodbc
+numpy
+rapidocr-onnxruntime
+ultralytics
+onnxruntime
+Pillow

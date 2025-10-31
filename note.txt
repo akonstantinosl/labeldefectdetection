@@ -1,0 +1,20 @@
+-----------------------
+for development
+1. npm install
+2. cd python
+3. pip install -r requirements.txt
+4. pyinstaller --onefile --clean --noconfirm --add-data "rapidocr_onnxruntime:rapidocr_onnxruntime" detector.py
+5. cd ..
+6. npm run package-win
+------------------------
+
+pip uninstall -y numpy Pillow requests opencv-python flask ultralytics rapidocr-onnxruntime pyodbc flask-cors
+
+------------------------
+cara menjalankan project
+1. npm install
+2. menggunakan virtual environment (skip jika tidak ingin virtual)
+   a. python3 -m venv venv (membuat jika belum punya)
+   b. source venv/bin/activate (mengaktifkan virtual environment. pastikan nama folder virtual environment yang dibuat / yang sudah ada)
+3. pip install -r http://192.19.27.113/data/yolo/packages/requirements.txt
+4. npm start

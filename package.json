@@ -1,0 +1,65 @@
+{
+    "name": "label-defect-detection",
+    "version": "1.0.0",
+    "description": "JST - Label Defect Detection Application with YOLO and OCR",
+    "main": "src/main.js",
+    "scripts": {
+        "start": "electron .",
+        "start-python": "cd python && python3 detector.py",
+        "start-python-exe": "cd python/dist && ./detector",
+        "start-all": "concurrently \"npm run start-python\" \"npm run start\"",
+        "start-all-exe": "concurrently \"npm run start-python-exe\" \"npm run start\"",
+        "build": "electron-builder",
+        "package-win": "electron-builder --win --x64",
+        "package-linux": "electron-builder --linux",
+        "build:installer-linux": "rm -f installer/linux/*.tar.gz && cp -r python models installer/linux/ && tar -czvf installer/labelvision-installer-linux.tar.gz -C installer/linux/ ."
+    },
+    "build": {
+        "appId": "com.jst.labeldefectdetection",
+        "productName": "Label Defect Detection",
+        "asar": true,
+        "compression": "normal",
+        "files": [
+            "src/**/*",
+            "assets/**/*",
+            "node_modules/**/*",
+            "python/**/*"
+        ],
+        "directories": {
+            "buildResources": "assets",
+            "output": "dist"
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "assets/logo.ico"
+        },
+        "linux": {
+            "category": "Utility",
+            "icon": "assets/logo.png"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "installerIcon": "assets/logo.ico"
+        }
+    },
+    "keywords": [
+        "ocr",
+        "yolo",
+        "label-defect-detection"
+    ],
+    "author": "JST Indonesia",
+    "license": "ISC",
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "electron": "^38.2.0",
+        "electron-builder": "^24.13.3"
+    },
+    "dependencies": {
+        "axios": "^1.6.2",
+        "electron-log": "^5.0.1",
+        "python-shell": "^5.0.0"
+    }
+}

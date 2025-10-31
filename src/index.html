@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Label Detection Application</title>
+        <link rel="stylesheet" href="index.css" />
+        <link rel="stylesheet" href="../assets/bootstrap/bootstrap.min.css" />
+        <link rel="stylesheet" href="../assets/bootstrap/bootstrap-icons/font/bootstrap-icons.min.css" />
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="app-header">
+                <div class="d-flex align-items-center gap-3">
+                    <h3 class="text-primary m-0">Label Defect Detection</h3>
+                    <div class="ms-auto">
+                        <button id="process_btn" class="btn btn-success btn-lg">
+                            <i class="bi bi-camera-fill me-2"></i>Process
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                <div class="image-container">
+                    <div class="image-panel">
+                        <div class="d-flex align-items-center justify-content-between p-2" style="background-color: #547980">
+                            <h5 class="fw-bold text-white m-0">Live Camera</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <select class="form-select form-select-sm" id="frame_guide_select">
+                                    <option value="none" selected>None</option>
+                                    <option value="inside">Inside</option>
+                                    <option value="outside">Outside</option>
+                                </select>
+                                <button class="btn p-0" id="play_pause_overlay" title="Play or Pause Kamera">
+                                    <i id="play_pause_icon" class="bi bi-pause-circle-fill text-white fs-4"></i>
+                                </button>
+                            </div>
+                            </div>
+                        <div class="panel-body">
+                            <img id="live_camera_img" src="../assets/init_camera.png" alt="Live Camera" class="img-fluid" />
+                            <svg id="camera_overlay_svg" class="camera-overlay"></svg>
+                            </div>
+                    </div>
+                    <div class="image-panel">
+                        <div style="background-color: #45ada8">
+                            <h5 class="fw-bold m-2 text-white">Processed Image</h5>
+                        </div>
+                        <div class="panel-body">
+                            <img id="processed_img" src="../assets/no_image.png" alt="Processed Image" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-container">
+                    <div class="results-panel">
+                        <div class="bg-light">
+                            <h5 class="fw-bold m-2 text-success">Matched Results</h5>
+                        </div>
+                        <div class="panel-body">
+                            <textarea name="matched_results_txt" id="matched_results_txt" class="results-content" readonly></textarea>
+                        </div>
+                    </div>
+                    <div class="results-panel">
+                        <div class="bg-light">
+                            <h5 class="fw-bold m-2 text-danger">Defect Results</h5>
+                        </div>
+                        <div class="panel-body">
+                            <textarea name="defect_results_txt" id="defect_results_txt" class="results-content" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="app-footer">
+                <p>&copy; 2025 JST Indonesia. All rights reserved.</p>
+            </footer>
+        </div>
+
+        <script src="../assets/bootstrap/bootstrap.min.js"></script>
+        <script src="renderer.js"></script>
+    </body>
+</html>
