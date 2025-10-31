@@ -15,12 +15,13 @@
 ; Informasi dasar aplikasi
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+ArchitecturesInstallIn64BitMode=x64
 AppPublisher={#MyAppPublisher}
 AppVerName={#MyAppName}
 UninstallDisplayName={#MyAppName}
 
 ; Lokasi instalasi (di dalam Program Files)
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf64}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 
 ; Ikon untuk installer (diambil dari variabel GitHub Actions)

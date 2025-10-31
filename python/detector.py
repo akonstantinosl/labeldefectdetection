@@ -70,7 +70,28 @@ WHERE a.Partbom_Partcode = ?
 
 # --- Inisialisasi & Konfigurasi Path ---
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "best.pt")
+# Get the directory where this script is located.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# In Production, 'models' is a subdirectory of SCRIPT_DIR
+prod_model_path = os.path.join(SCRIPT_DIR, "models", "best.pt")
+
+# In Development, 'models' is a sibling to SCRIPT_DIR's parent
+dev_model_path = os.path.join(os.path.dirname(SCRIPT_DIR), "models", "best.pt")
+
+if os.path.exists(prod_model_path):
+    # We are in Production
+    MODEL_PATH = prod_model_path
+    print(f"Loading model from Production path: {MODEL_PATH}")
+elif os.path.exists(dev_model_path):
+    # We are in Development
+    MODEL_PATH = dev_model_path
+    print(f"Loading model from Development path: {MODEL_PATH}")
+else:
+    # Default to production path and let it fail if not found
+    print(f"Error: Model not found in Dev or Prod paths. Failing.")
+    MODEL_PATH = prod_model_path
+
 OCR_ENGINE = RapidOCR()
 
 SQL_ALIAS_TO_YOLO_CLASS = {
