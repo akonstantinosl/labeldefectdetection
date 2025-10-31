@@ -1,0 +1,161 @@
+name: Build and Release LabelDefectDetection Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*.*' # Memicu untuk tag seperti v1.0, v1.1
+  workflow_dispatch: # Memperbolehkan trigger manual
+
+env:
+  APP_NAME: "LabelDefectDetection"
+  PYTHON_VERSION: "3.12.7" # Sesuaikan dengan versi Python yang Anda gunakan
+  PYTHON_EMBED_ZIP: "python-3.12.7-embed-amd64.zip"
+  STAGING_DIR: "staging" # Folder sementara untuk menampung semua file
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    
+    permissions:
+      contents: write # Diperlukan untuk membuat rilis
+
+    steps:
+    # 1. Mengunduh kode dari repositori
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Setup Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Gunakan versi LTS Node.js
+
+    # 3. Setup Python untuk menjalankan skrip build
+    - name: Set up Python for build scripts
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    # 4. Install dependensi Node.js
+    - name: Install Node.js dependencies
+      run: npm install
+
+    # 5. Build aplikasi Electron
+    - name: Build Electron app
+      run: npm run package-win # Menjalankan "electron-builder --win --x64"
+      # Ini akan membuat folder 'dist/win-unpacked'
+
+    # 6. Membuat folder staging
+    - name: Create staging directories
+      shell: pwsh
+      run: |
+        mkdir ${{ env.STAGING_DIR }}
+        mkdir ${{ env.STAGING_DIR }}\app
+        mkdir ${{ env.STAGING_DIR }}\py_backend
+        mkdir ${{ env.STAGING_DIR }}\py_backend\models
+
+    # 7. Salin aplikasi Electron yang sudah di-build ke staging
+    - name: Copy Electron app to staging
+      run: xcopy /E /I /Q dist\win-unpacked ${{ env.STAGING_DIR }}\app
+
+    # 8. Salin file-file backend Python ke staging
+    - name: Copy Python backend files
+      shell: cmd
+      run: |
+        copy python\detector.py ${{ env.STAGING_DIR }}\py_backend\detector.py
+        copy python\requirements.txt ${{ env.STAGING_DIR }}\py_backend\requirements.txt
+        copy install_libs.bat ${{ env.STAGING_DIR }}\py_backend\install_libs.bat
+        xcopy /E /I /Q models ${{ env.STAGING_DIR }}\py_backend\models
+        copy assets\logo.ico ${{ env.STAGING_DIR }}\icon.ico
+
+    # 9. Mengunduh dan mengekstrak Python Embeddable
+    - name: Download and extract Python Embeddable
+      shell: pwsh
+      run: |
+        curl.exe -L -o "${{ env.PYTHON_EMBED_ZIP }}" "https://www.python.org/ftp/python/${{ env.PYTHON_VERSION }}/${{ env.PYTHON_EMBED_ZIP }}"
+        New-Item -ItemType Directory -Path "${{ env.STAGING_DIR }}\py_backend\python"
+        Expand-Archive -Path "${{ env.PYTHON_EMBED_ZIP }}" -DestinationPath "${{ env.STAGING_DIR }}\py_backend\python"
+
+    # 10. Mengedit file ._pth agar bisa impor 'site'
+    - name: Uncomment 'import site' in .pth file
+      shell: pwsh
+      run: |
+        $pth_file = "${{ env.STAGING_DIR }}\py_backend\python\python312._pth"
+        (Get-Content $pth_file) -replace '#import site', 'import site' | Set-Content $pth_file
+
+    # 11. Mengunduh get-pip.py
+    - name: Download get-pip.py
+      shell: pwsh
+      run: |
+        curl.exe -L -o "${{ env.STAGING_DIR }}\py_backend\get-pip.py" "https://bootstrap.pypa.io/get-pip.py"
+
+    # 12. Mengunduh Visual C++ Redistributable
+    - name: Download Visual C++ Redistributable
+      shell: pwsh
+      run: |
+        curl.exe -L -o "${{ env.STAGING_DIR }}\vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+
+    # 13. Mengunduh semua library Python (wheels) secara offline
+    - name: Download Python wheels
+      shell: pwsh
+      run: |
+        echo "Meng-upgrade pip di runner..."
+        python -m pip install --upgrade pip
+
+        echo "Membuat direktori wheels..."
+        mkdir ${{ env.STAGING_DIR }}\py_backend\wheels
+        
+        echo "Mengunduh semua library dari requirements.txt..."
+        pip download -d ${{ env.STAGING_DIR }}\py_backend\wheels `
+          -r python\requirements.txt `
+          --platform win_amd64 `
+          --python-version 3.12 `
+          --abi cp312 `
+          --abi abi3 `
+          --only-binary=:all:
+          
+        echo "Mengunduh pip, setuptools, dan wheel..."
+        pip download -d ${{ env.STAGING_DIR }}\py_backend\wheels pip setuptools wheel
+
+    # 14. Menginstal Inno Setup
+    - name: Install Inno Setup
+      shell: pwsh
+      run: |
+        curl.exe -L -o "is-stable.exe" "https://jrsoftware.org/download.php/is.exe?site=1"
+        Start-Process -FilePath "is-stable.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/NOCANCEL", "/SP-", "/LOG=inno_setup_install.log" -Wait
+        $Env:Path += ";C:\Program Files (x86)\Inno Setup 6"
+        
+    # 15. Mengunduh file bahasa Indonesia untuk installer
+    - name: Download Inno Setup Indonesian Language File
+      shell: pwsh
+      run: |
+        curl.exe -L -o "C:\Program Files (x86)\Inno Setup 6\Languages\Indonesian.isl" "https://github.com/jrsoftware/issrc/raw/main/Files/Languages/Unofficial/Indonesian.isl"
+        
+    # 16. Mengambil nomor versi dari package.json
+    - name: Get version from package.json
+      id: get_version
+      shell: pwsh
+      run: |
+        $version = (Get-Content -Path package.json | ConvertFrom-Json).version
+        echo "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        echo "Using version $version from package.json"
+        
+    # 17. Menjalankan compiler Inno Setup
+    - name: Compile Inno Setup installer
+      shell: cmd
+      run: |
+        cd ${{ github.workspace }}
+        REM Definisikan path absolut ke ikon DI DALAM folder 'staging'
+        set SETUP_ICON_PATH=%CD%\${{ env.STAGING_DIR }}\icon.ico
+        
+        iscc.exe "setup.iss" /DMyAppVersion="${{ env.APP_VERSION }}" /DSetupIconAbsPath="%SETUP_ICON_PATH%"
+
+    # 18. Membuat GitHub Release dan mengunggah file Setup.exe
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        name: Release ${{ env.APP_VERSION }}
+        files: Output/${{ env.APP_NAME }}-Setup-v${{ env.APP_VERSION }}.exe
