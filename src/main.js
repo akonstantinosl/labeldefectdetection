@@ -1,3 +1,5 @@
+//src/main.js
+
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const axios = require("axios");
@@ -35,42 +37,59 @@ async function startPythonServer() {
     return new Promise((resolve, reject) => {
         log.info("Starting Python backend...");
 
-        // if (app.isPackaged) {
-        // DI PRODUCTION: Jalankan .exe
-        // const scriptPath = path.join(__dirname, "../python/dist/detector");
-        // pythonProcess = spawn(scriptPath, { stdio: "pipe" });
-        // } else {
-        //     // SAAT DEVELOPMENT: Jalankan .py
-        const scriptPath = path.join(__dirname, "../python/detector.py");
-        const pythonCmd = os.platform() === "win32" ? "python" : "python3";
-        pythonProcess = spawn(pythonCmd, [scriptPath], { stdio: "pipe" });
-        // }
+        let pythonCmd;
+        let scriptPath;
 
-        pythonProcess.stdout.on("data", () => {});
+        if (app.isPackaged) {
+            // --- LINGKUNGAN PRODUKSI (SETELAH DIINSTAL) ---
+            // Path menunjuk ke folder 'py_backend' yang diinstal oleh Inno Setup
+            const backendRoot = path.join(process.resourcesPath, '..', 'py_backend');
+            
+            pythonCmd = path.join(backendRoot, 'python', 'python.exe');
+            scriptPath = path.join(backendRoot, 'detector.py');
+            
+            log.info(`Running packaged Python: ${pythonCmd}`);
+            log.info(`Running script: ${scriptPath}`);
+
+        } else {
+            // --- LINGKUNGAN DEVELOPMENT (npm run start) ---
+            scriptPath = path.join(__dirname, "../python/detector.py");
+            pythonCmd = os.platform() === "win32" ? "python" : "python3";
+            log.info(`Running dev Python: ${pythonCmd} ${scriptPath}`);
+        }
+
+        // Cek jika file python.exe ada (khusus produksi)
+        if (app.isPackaged && !require('fs').existsSync(pythonCmd)) {
+             const errorMsg = `Python executable not found at: ${pythonCmd}`;
+             log.error(errorMsg);
+             dialog.showErrorBox("Python Error", `Komponen backend tidak ditemukan. Coba install ulang aplikasi.\n\nPath: ${pythonCmd}`);
+             return reject(new Error(errorMsg));
+        }
+
+        // Gunakan spawn dengan path absolut
+        pythonProcess = spawn(pythonCmd, [scriptPath], { 
+            stdio: "pipe",
+            // Tentukan CWD ke root backend agar 'detector.py' bisa menemukan 'models'
+            cwd: app.isPackaged ? path.join(process.resourcesPath, '..', 'py_backend') : path.join(__dirname, "../python")
+        });
+        
+        pythonProcess.stdout.on("data", (data) => {
+             log.info(`Python stdout: ${data.toString()}`);
+        });
         pythonProcess.stderr.on("data", (data) => {
             const errorMsg = data.toString();
-            // log.error(`Python stderr: ${errorMsg}`);
+            log.error(`Python stderr: ${errorMsg}`);
 
             if (errorMsg.includes("ModuleNotFoundError") || errorMsg.includes("ImportError")) {
-                dialog.showErrorBox("Python Error", `Library Python belum terinstall:\n\n${errorMsg}`);
+                dialog.showErrorBox("Python Error", `Library Python (backend) korup atau gagal diinstal:\n\n${errorMsg}`);
                 reject(new Error(errorMsg));
             }
         });
 
-        // pythonProcess.stdout.on("data", (data) => {
-        //     log.info(`Python stdout: ${data.toString()}`);
-        // });
-        // pythonProcess.stderr.on("data", (data) => {
-        //     log.error(`Python stderr: ${data.toString()}`);
-        // });
-        // pythonProcess.on("error", (err) => {
-        //     log.error(`Failed to start Python process: ${err}`);
-        //     reject(err);
-        // });
-        // pythonProcess.on("close", (code) => {
-        //     log.info(`Python process exited with code ${code}`);
-        //     pythonProcess = null;
-        // });
+        pythonProcess.on("error", (err) => {
+             log.error(`Failed to start Python process: ${err}`);
+             reject(err);
+        });
 
         const checkServer = async () => {
             try {
