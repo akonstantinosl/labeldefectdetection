@@ -31,8 +31,10 @@ DefaultGroupName={#MyAppName}
 SetupIconFile={#SetupIconAbsPath}
 ; Ikon untuk Uninstaller di Control Panel
 UninstallDisplayIcon={app}\icon.ico
+; Menentukan folder output
+OutputDir=Output
 ; Nama file output installer
-OutputBaseFilename=Output\{#MyAppName}-Setup-v{#MyAppVersion}
+OutputBaseFilename={#MyAppName}-Setup-v{#MyAppVersion}
 
 ; Pengaturan kompresi
 Compression=lzma
