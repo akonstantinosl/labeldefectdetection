@@ -10,7 +10,9 @@
         "start-all": "concurrently \"npm run start-python\" \"npm run start\"",
         "start-all-exe": "concurrently \"npm run start-python-exe\" \"npm run start\"",
         "build": "electron-builder",
-        "package-win": "electron-builder --win --x64",
+        
+        "package-win": "electron-builder --win --x64 --publish never",
+        
         "package-linux": "electron-builder --linux",
         "build:installer-linux": "rm -f installer/linux/*.tar.gz && cp -r python models installer/linux/ && tar -czvf installer/labelvision-installer-linux.tar.gz -C installer/linux/ ."
     },
@@ -31,18 +33,13 @@
         },
         "win": {
             "target": [
-                "nsis"
+                "dir"
             ],
             "icon": "assets/logo.ico"
         },
         "linux": {
             "category": "Utility",
             "icon": "assets/logo.png"
-        },
-        "nsis": {
-            "oneClick": false,
-            "allowToChangeInstallationDirectory": true,
-            "installerIcon": "assets/logo.ico"
         }
     },
     "keywords": [

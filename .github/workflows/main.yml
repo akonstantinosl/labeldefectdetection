@@ -42,8 +42,8 @@ jobs:
 
     # 5. Build aplikasi Electron
     - name: Build Electron app
-      run: npm run package-win # Menjalankan "electron-builder --win --x64"
-      # Ini akan membuat folder 'dist/win-unpacked'
+      run: npm run package-win # Menjalankan "electron-builder --win --x64 --publish never"
+      # Ini akan membuat folder 'dist/win-unpacked' 
 
     # 6. Membuat folder staging
     - name: Create staging directories
